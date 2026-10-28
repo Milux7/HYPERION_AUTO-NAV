@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYPERION AUTO-NAV v3.0 - Cyberpunk Edition</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Orbitron & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- Three.js CDN para Renderizado 3D Interactiva -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#03050a',
+                            card: 'rgba(10, 16, 30, 0.82)',
+                            border: 'rgba(0, 240, 255, 0.25)',
+                            blue: '#00f0ff',
+                            green: '#00ff66',
+                            yellow: '#ffb700',
+                            red: '#ff0055',
+                            purple: '#7000ff'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #03050a;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(112, 0, 255, 0.22) 0%, transparent 60%),
+                radial-gradient(circle at 100% 100%, rgba(0, 240, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 0% 50%, rgba(255, 0, 85, 0.1) 0%, transparent 45%);
+            background-attachment: fixed;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Glassmorphism Futuro Avanzado */
+        .glass-panel {
+            background: rgba(10, 16, 30, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(0, 240, 255, 0.03);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(0, 240, 255, 0.45);
+            box-shadow: 0 12px 40px 0 rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
+        }
+
+        .glow-text-cyan {
+            text-shadow: 0 0 12px rgba(0, 240, 255, 0.8), 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #03050a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+            box-shadow: 0 0 10px #00f0ff;
+        }
+
+        /* JOYSTICK CYBERPUNK STYLES */
+        .stick-base {
+            position: relative;
+            width: 230px;
+            height: 230px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, rgba(0, 240, 255, 0.15), rgba(7, 10, 18, 0.95) 70%);
+            border: 2px solid rgba(0, 240, 255, 0.4);
+            box-shadow: inset 0 8px 20px rgba(0,0,0,0.8), 0 0 25px rgba(0, 240, 255, 0.25);
+            touch-action: none;
+        }
+        .stick-arrow {
+            position: absolute;
+            color: rgba(0, 240, 255, 0.4);
+            font-size: 18px;
+            font-weight: bold;
+            pointer-events: none;
+            transition: color 0.2s, text-shadow 0.2s;
+        }
+        .stick-arrow.up    { top: 12px; left: 50%; transform: translateX(-50%); }
+        .stick-arrow.down  { bottom: 12px; left: 50%; transform: translateX(-50%); }
+        .stick-arrow.left  { left: 12px; top: 50%; transform: translateY(-50%); }
+        .stick-arrow.right { right: 12px; top: 50%; transform: translateY(-50%); }
+        
+        .stick-knob {
+            position: absolute;
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle at 35% 30%, #00f0ff, #0284c7);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.8), inset 0 2px 5px rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            color: #000;
+            cursor: pointer;
+            transition: box-shadow 0.15s, transform 0.05s ease-out;
+        }
+        .stick-knob.active {
+            box-shadow: 0 0 40px rgba(0, 240, 255, 1), inset 0 2px 5px rgba(255,255,255,0.9), 0 0 0 10px rgba(0, 240, 255, 0.25);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 10px;
+            cursor: pointer;
+            background: #090d16;
+            border-radius: 5px;
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 26px;
+            width: 26px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -8px;
+            box-shadow: 0 0 20px #00f0ff;
+            border: 2px solid #ffffff;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-cyan-500 selection:text-black">
+
+    <!-- BANNER CIBERNÉTICO SUPERIOR DE NAVEGACIÓN AUTÓNOMA -->
+    <div class="bg-gradient-to-r from-purple-950 via-cyan-950 to-blue-950 border-b border-cyan-400/30 text-cyan-300 py-2.5 px-4 text-center text-xs font-semibold flex items-center justify-center gap-3">
+        <span class="flex h-2.5 w-2.5 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400"></span>
+        </span>
+        <span class="tracking-wide">TECNOLOGÍA AUTÓNOMA ESP32: Sistema Anti-Colisión por Ultrasonido + Servidor HTTP Asíncrono</span>
+        <span class="hidden md:inline-block px-2.5 py-0.5 rounded bg-purple-500/20 border border-purple-400/40 text-[10px] font-mono text-purple-300 uppercase tracking-widest">
+            Frecuencia 40 kHz
+        </span>
+    </div>
+
+    <!-- HEADER DE NAVEGACIÓN TOP -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-cyan-500/20 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="relative flex items-center justify-center w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-400/40 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+                    <i class="fa-solid fa-robot text-cyan-400 text-2xl"></i>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-400 rounded-full animate-ping"></span>
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-extrabold text-lg md:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-purple-500 glow-text-cyan">
+                        HYPERION AUTO-NAV <span class="text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">v3.0</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400 tracking-widest uppercase">Robot Móvil Esquiva-Obstáculos ESP32 AP</p>
+                </div>
+            </div>
+
+            <nav class="flex items-center space-x-1 sm:space-x-2 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800">
+                <button onclick="switchTab('simulator')" id="btn-simulator" class="tab-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 text-cyan-400 bg-cyan-500/10 border border-cyan-500/30">
+                    <i class="fa-solid fa-gamepad mr-1.5"></i>Control Live
+                </button>
+                <button onclick="switchTab('specs')" id="btn-specs" class="tab-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-layer-group mr-1.5"></i>Especificaciones
+                </button>
+                <button onclick="switchTab('wiring')" id="btn-wiring" class="tab-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-diagram-project mr-1.5"></i>Conexiones
+                </button>
+                <button onclick="switchTab('code')" id="btn-code" class="tab-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-code mr-1.5"></i>Código Firmware
+                </button>
+                <button onclick="switchTab('team')" id="btn-team" class="tab-btn px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-user-gear mr-1.5"></i>Equipo
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- TAB 1: INTERACTIVE SIMULATOR & CONTROL -->
+        <section id="tab-simulator" class="tab-content space-y-8">
+            
+            <!-- MODELO 3D ULTRA-FUTURISTA CON SELECCIÓN DE LUCES NEÓN -->
+            <div class="glass-panel p-6 rounded-2xl relative overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_30px_rgba(0,240,255,0.15)]">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4 border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="font-orbitron font-bold text-lg text-cyan-400 flex items-center gap-2">
+                            <i class="fa-solid fa-cube text-cyan-400"></i> Renderizado 3D Interactivo del Robot 2WD
+                        </h2>
+                        <p class="text-xs text-slate-400">Arrastra para rotar 360°. Observa el chasis acrílico, baterías, componentes reales y las ondas de ultrasonido en tiempo real.</p>
+                    </div>
+
+                    <!-- Botones de Control de Luces Neón del Canvas -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px] font-mono text-slate-400 mr-1">Luces Chasis:</span>
+                        <button onclick="changeNeonColor(0x00f0ff)" class="w-6 h-6 rounded-full bg-cyan-400 border border-white hover:scale-110 transition shadow-[0_0_8px_#00f0ff]"></button>
+                        <button onclick="changeNeonColor(0x00ff66)" class="w-6 h-6 rounded-full bg-emerald-400 border border-white hover:scale-110 transition shadow-[0_0_8px_#00ff66]"></button>
+                        <button onclick="changeNeonColor(0x7000ff)" class="w-6 h-6 rounded-full bg-purple-600 border border-white hover:scale-110 transition shadow-[0_0_8px_#7000ff]"></button>
+                        <button onclick="changeNeonColor(0xff0055)" class="w-6 h-6 rounded-full bg-red-500 border border-white hover:scale-110 transition shadow-[0_0_8px_#ff0055]"></button>
+                    </div>
+                </div>
+
+                <!-- Canvas donde se renderiza el modelo 3D -->
+                <div class="relative w-full rounded-xl overflow-hidden bg-slate-950/90 border border-slate-800">
+                    <canvas id="canvas-robot-3d" class="w-full h-[380px] md:h-[480px] cursor-grab active:cursor-grabbing block"></canvas>
+                    
+                    <!-- Overlay de controles 3D -->
+                    <div class="absolute bottom-3 right-3 glass-panel px-3 py-1.5 rounded-lg text-[11px] font-mono text-cyan-300 flex items-center gap-2 pointer-events-none">
+                        <i class="fa-solid fa-hand-pointer text-cyan-400"></i> Click / Toca & Arrastra para rotar en 3D
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Status Header Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="glass-panel p-4 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                        <i class="fa-solid fa-wifi text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Red SoftAP</div>
+                        <div class="font-orbitron text-sm font-bold text-slate-200">RobotESP32</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                        <i class="fa-solid fa-microchip text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Microcontrolador</div>
+                        <div class="font-orbitron text-sm font-bold text-slate-200">ESP32 Dual Core</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <i class="fa-solid fa-shield-halved text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Seguridad Autónoma</div>
+                        <div class="font-orbitron text-sm font-bold text-emerald-400" id="safety-status">&le; 15 cm Stop</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-xl flex items-center space-x-4">
+                    <div class="p-3 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <i class="fa-solid fa-server text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">Servidor Web</div>
+                        <div class="font-orbitron text-sm font-bold text-slate-200">http://192.168.4.1</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JOYSTICK & TELEMETRY GRID -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- JOYSTICK CONTROLLER (7 COLS) -->
+                <div class="lg:col-span-7 glass-panel p-6 rounded-2xl flex flex-col justify-between space-y-6">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <h2 class="font-orbitron font-bold text-slate-100">Panel de Mando Táctil (Joystick Web)</h2>
+                        </div>
+                        <span class="text-xs font-mono text-cyan-400 font-bold" id="cmd-display">COMANDO: PARAR</span>
+                    </div>
+
+                    <!-- Joystick Graphic -->
+                    <div class="flex justify-center my-4">
+                        <div class="stick-base" id="stick-base">
+                            <div class="stick-arrow up" id="arrow-up">▲</div>
+                            <div class="stick-arrow down" id="arrow-down">▼</div>
+                            <div class="stick-arrow left" id="arrow-left">◀</div>
+                            <div class="stick-arrow right" id="arrow-right">▶</div>
+                            <div class="stick-knob" id="stick-knob">
+                                <i class="fa-solid fa-gamepad"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Emergency Stop Button -->
+                    <div class="flex justify-center">
+                        <button onclick="sendSimCmd('parar')" class="px-8 py-3 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-orbitron font-bold rounded-full text-xs transition duration-200 shadow-[0_0_20px_rgba(239,68,68,0.5)] flex items-center gap-2">
+                            <i class="fa-solid fa-circle-stop text-lg"></i> PARAR EMERGENCIA
+                        </button>
+                    </div>
+
+                    <!-- Distance Range Slider -->
+                    <div class="space-y-3 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-xs font-semibold">
+                            <span class="text-slate-400"><i class="fa-solid fa-sliders mr-1 text-cyan-400"></i> Simular Sensor Ultrasónico (HC-SR04)</span>
+                            <span class="text-cyan-400 font-orbitron" id="dist-slider-text">60 cm</span>
+                        </div>
+                        <input type="range" id="dist-slider" min="5" max="150" value="60" oninput="updateSimDistance(this.value)" class="w-full">
+                        <div class="flex justify-between text-[10px] text-slate-500 font-orbitron">
+                            <span>5 cm (Bloqueo Automático)</span>
+                            <span>15 cm (Límite)</span>
+                            <span>150 cm (Libre)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROBOT TELEMETRY & LOGS (5 COLS) -->
+                <div class="lg:col-span-5 glass-panel p-6 rounded-2xl flex flex-col justify-between space-y-6">
+                    <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
+                        <h2 class="font-orbitron font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-car text-cyan-400"></i> Estado de los Motores
+                        </h2>
+                        <span class="text-xs text-slate-400">Driver L298N</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 text-center">
+                            <div class="text-xs text-slate-400 uppercase font-semibold mb-1">Motor Izquierdo</div>
+                            <div id="motor-left-status" class="font-orbitron text-sm font-bold text-slate-400">DETENIDO</div>
+                            <div class="text-[10px] text-slate-500 mt-1 font-mono">IN1, IN2 | ENA 200</div>
+                        </div>
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 text-center">
+                            <div class="text-xs text-slate-400 uppercase font-semibold mb-1">Motor Derecho</div>
+                            <div id="motor-right-status" class="font-orbitron text-sm font-bold text-slate-400">DETENIDO</div>
+                            <div class="text-[10px] text-slate-500 mt-1 font-mono">IN3, IN4 | ENB 200</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-semibold text-slate-300">Proximidad de Obstáculo</span>
+                            <span id="dist-gauge-text" class="font-orbitron text-sm font-bold text-emerald-400">60 cm</span>
+                        </div>
+                        <div class="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
+                            <div id="dist-gauge-bar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 60%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 font-mono text-xs space-y-1">
+                        <div class="text-slate-500 uppercase text-[10px] tracking-widest border-b border-slate-800 pb-1 mb-2 flex justify-between">
+                            <span>Consola de Eventos AP</span>
+                            <span class="text-cyan-400">WebServer HTTP:80</span>
+                        </div>
+                        <div class="text-slate-300 space-y-1" id="console-logs">
+                            <div>> [SYSTEM]: Servidor HTTP iniciado en 192.168.4.1</div>
+                            <div>> [WIFI]: Punto de acceso 'RobotESP32' activo.</div>
+                            <div id="console-cmd-log" class="text-cyan-300">> [CMD]: Esperando instrucción del usuario...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: SPECIFICATIONS -->
+        <section id="tab-specs" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <h2 class="font-orbitron font-bold text-xl text-cyan-400 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-microchip"></i> Arquitectura y Componentes del Robot
+                </h2>
+                <p class="text-sm text-slate-400 mb-6">Detalles del hardware de control, comunicación inalámbrica WiFi y algoritmo de seguridad para esquivar obstáculos.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 mb-4 text-xl">
+                            <i class="fa-solid fa-wifi"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Red WiFi Propia (Access Point)</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">El microcontrolador ESP32 crea su propia red inalámbrica ("RobotESP32"). No requiere router externo ni conexión a Internet para operar.</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 mb-4 text-xl">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Servidor Web HTTP Asíncrono</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Aloja la interfaz gráfica Web-Joystick en su memoria Flash mediante `PROGMEM` y responde a peticiones HTTP GET inmediatas (/adelante, /parar, etc.).</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-4 text-xl">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Sistema Anticolisión</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Un bucle continuo mide la distancia con el HC-SR04. Si detecta un objeto a menos de **15 cm**, anula el comando activo y detiene los motores de inmediato.</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 mb-4 text-xl">
+                            <i class="fa-solid fa-car-side"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Driver de Motores L298N</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Puente H doble que controla la dirección y polaridad de los dos motores DC. La velocidad PWM está regulada a un valor constante de 200 (sobre 255).</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 mb-4 text-xl">
+                            <i class="fa-solid fa-wave-square"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Sensor Ultrasónico HC-SR04</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Ubicado en la parte frontal. Emite pulsos a 40kHz y calcula el tiempo de retorno del eco en microsegundos para obtener la distancia exacta.</p>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 hover:border-cyan-500/40 transition">
+                        <div class="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400 mb-4 text-xl">
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-200 text-base mb-2">Control Multiplataforma</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Compatible con cualquier smartphone o computadora con navegador web. El joystick adapta su sensibilidad mediante APIs de eventos `Pointer` táctiles.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: WIRING MAP & PINOUT TABLE -->
+        <section id="tab-wiring" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <h2 class="font-orbitron font-bold text-xl text-cyan-400 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-diagram-project"></i> Mapeo Completo de Pines y Cableado
+                </h2>
+                <p class="text-sm text-slate-400 mb-6">Distribución de conexiones de hardware entre la placa ESP32, el driver L298N y el sensor ultrasónico.</p>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-800">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/90 text-cyan-400 font-orbitron text-xs tracking-wider uppercase border-b border-slate-800">
+                                <th class="p-3.5">Módulo / Componente</th>
+                                <th class="p-3.5">Pin del Módulo</th>
+                                <th class="p-3.5">Pin en Placa ESP32</th>
+                                <th class="p-3.5">Función Electrónica</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-xs font-mono text-slate-300">
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-emerald-400">HC-SR04 Ultrasónico</td>
+                                <td class="p-3.5">TRIG</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">GPIO 5</td>
+                                <td class="p-3.5 text-slate-400">Emisión de disparo ultrasónico</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-emerald-400">HC-SR04 Ultrasónico</td>
+                                <td class="p-3.5">ECHO</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">GPIO 18</td>
+                                <td class="p-3.5 text-slate-400">Lectura de tiempo de eco</td>
+                            </tr>
+
+                            <tr class="bg-slate-900/30 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-amber-400">Driver L298N (Izquierdo)</td>
+                                <td class="p-3.5">IN1</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">GPIO 26</td>
+                                <td class="p-3.5 text-slate-400">Giro avance motor izquierdo</td>
+                            </tr>
+                            <tr class="bg-slate-900/30 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-amber-400">Driver L298N (Izquierdo)</td>
+                                <td class="p-3.5">IN2</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">GPIO 27</td>
+                                <td class="p-3.5 text-slate-400">Giro reversa motor izquierdo</td>
+                            </tr>
+                            <tr class="bg-slate-900/30 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-amber-400">Driver L298N (Izquierdo)</td>
+                                <td class="p-3.5">ENA</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">GPIO 25</td>
+                                <td class="p-3.5 text-slate-400">Modulación PWM velocidad (200/255)</td>
+                            </tr>
+
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-purple-400">Driver L298N (Derecho)</td>
+                                <td class="p-3.5">IN3</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">GPIO 14</td>
+                                <td class="p-3.5 text-slate-400">Giro avance motor derecho</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-purple-400">Driver L298N (Derecho)</td>
+                                <td class="p-3.5">IN4</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">GPIO 12</td>
+                                <td class="p-3.5 text-slate-400">Giro reversa motor derecho</td>
+                            </tr>
+                            <tr class="bg-slate-950/40 hover:bg-slate-900/40">
+                                <td class="p-3.5 font-sans font-semibold text-purple-400">Driver L298N (Derecho)</td>
+                                <td class="p-3.5">ENB</td>
+                                <td class="p-3.5 text-cyan-300 font-bold">GPIO 33</td>
+                                <td class="p-3.5 text-slate-400">Modulación PWM velocidad (200/255)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: SOURCE CODE -->
+        <section id="tab-code" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                    <div>
+                        <h2 class="font-orbitron font-bold text-xl text-cyan-400 flex items-center gap-2">
+                            <i class="fa-solid fa-code"></i> Código Fuente Oficial (Arduino C++ para ESP32)
+                        </h2>
+                        <p class="text-sm text-slate-400">Firmware completo con Servidor Web en memoria Flash y control de seguridad.</p>
+                    </div>
+                    <button onclick="copySourceCode()" id="copy-btn" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-orbitron font-bold rounded-lg text-xs flex items-center gap-2 transition shadow-[0_0_15px_rgba(0,240,255,0.4)]">
+                        <i class="fa-regular fa-copy text-sm"></i>
+                        <span>Copiar Código</span>
+                    </button>
+                </div>
+
+                <div class="relative bg-slate-950 rounded-xl p-4 border border-slate-800 overflow-x-auto font-mono text-xs text-slate-300 leading-relaxed">
+<pre id="cpp-code-block"><code>/*
+ * ==============================================================================
+ * PROJECT: HYPERION AUTO-NAV v3.0
+ * SYSTEM:  Robot Esquiva-Obstáculos con ESP32 Access Point
+ * AUTHORS: Gleimer Arias, Jonny Carrisoza, Edwin Montiel, Miler Alarcón
+ * ==============================================================================
+ */
+
+#include &lt;WiFi.h&gt;
+#include &lt;WebServer.h&gt;
+
+const char* ssid     = "RobotESP32";      
+const char* password  = "robot1234";       
+
+WebServer server(80);
+
+const int PIN_TRIG = 5;
+const int PIN_ECHO = 18;
+
+const int IN1 = 26;
+const int IN2 = 27;
+const int ENA = 25;
+
+const int IN3 = 14;
+const int IN4 = 12;
+const int ENB = 33;
+
+const int DISTANCIA_MINIMA_CM = 15; 
+String comandoActual = "parar";
+
+void detener() {
+  digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
+}
+
+void avanzar() {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+}
+
+void retroceder() {
+  digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH);
+}
+
+void girarIzquierda() {
+  digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+}
+
+void girarDerecha() {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH);
+}
+
+long leerDistanciaCM() {
+  digitalWrite(PIN_TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(PIN_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(PIN_TRIG, LOW);
+
+  long duracion = pulseIn(PIN_ECHO, HIGH, 30000); 
+  if (duracion == 0) return 999; 
+  return (duracion * 0.0343) / 2.0;
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(PIN_TRIG, OUTPUT);
+  pinMode(PIN_ECHO, INPUT);
+  pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT); pinMode(IN4, OUTPUT);
+  pinMode(ENA, OUTPUT); pinMode(ENB, OUTPUT);
+
+  analogWrite(ENA, 200);
+  analogWrite(ENB, 200);
+
+  detener();
+
+  WiFi.softAP(ssid, password);
+  Serial.print("Red creada: "); Serial.println(ssid);
+  Serial.print("Servidor IP: "); Serial.println(WiFi.softAPIP());
+
+  server.on("/", []() { server.send(200, "text/html", "HYPERION AUTO-NAV OK"); });
+  server.on("/adelante", []() { comandoActual = "adelante"; server.send(200, "text/plain", "OK"); });
+  server.on("/atras", []() { comandoActual = "atras"; server.send(200, "text/plain", "OK"); });
+  server.on("/izquierda", []() { comandoActual = "izquierda"; server.send(200, "text/plain", "OK"); });
+  server.on("/derecha", []() { comandoActual = "derecha"; server.send(200, "text/plain", "OK"); });
+  server.on("/parar", []() { comandoActual = "parar"; server.send(200, "text/plain", "OK"); });
+  server.on("/distancia", []() { server.send(200, "text/plain", String(leerDistanciaCM())); });
+
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+  long distancia = leerDistanciaCM();
+
+  if (distancia &lt;= DISTANCIA_MINIMA_CM && comandoActual == "adelante") {
+    detener();
+    return;
+  }
+
+  if (comandoActual == "adelante") avanzar();
+  else if (comandoActual == "atras") retroceder();
+  else if (comandoActual == "izquierda") girarIzquierda();
+  else if (comandoActual == "derecha") girarDerecha();
+  else detener();
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: TEAM ROSTER -->
+        <section id="tab-team" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <div class="text-center max-w-2xl mx-auto mb-8">
+                    <h2 class="font-orbitron font-extrabold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-purple-500">
+                        UNIDAD DE INGENIERÍA HYPERION
+                    </h2>
+                    <p class="text-xs text-slate-400 tracking-wider uppercase mt-1">Equipo de Desarrollo & Especialistas de Hardware/Software</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 text-center hover:border-cyan-500/50 transition group">
+                        <div class="w-16 h-16 rounded-full bg-cyan-500/10 border-2 border-cyan-400/40 flex items-center justify-center text-cyan-400 mx-auto mb-4 text-2xl group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-wifi"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-100 text-base">Gleimer Arias</h3>
+                        <p class="text-xs text-cyan-400 font-semibold mb-2">Embedded Systems Lead</p>
+                        <p class="text-[11px] text-slate-400">Especialista en comunicaciones inalámbricas WiFi AP y gestión de servidor HTTP en ESP32.</p>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 text-center hover:border-emerald-500/50 transition group">
+                        <div class="w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-400/40 flex items-center justify-center text-emerald-400 mx-auto mb-4 text-2xl group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-car-side"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-100 text-base">Jonny Carrisoza</h3>
+                        <p class="text-xs text-emerald-400 font-semibold mb-2">Robotics & Motor Driver</p>
+                        <p class="text-[11px] text-slate-400">Diseñador de la etapa de potencia, integración del driver L298N y regulación de velocidad PWM.</p>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 text-center hover:border-amber-500/50 transition group">
+                        <div class="w-16 h-16 rounded-full bg-amber-500/10 border-2 border-amber-400/40 flex items-center justify-center text-amber-400 mx-auto mb-4 text-2xl group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-100 text-base">Edwin Montiel</h3>
+                        <p class="text-xs text-amber-400 font-semibold mb-2">Safety Systems Specialist</p>
+                        <p class="text-[11px] text-slate-400">Líder en algoritmos de detección ultrasónica y lógica de parada preventiva anticolisión.</p>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 text-center hover:border-purple-500/50 transition group">
+                        <div class="w-16 h-16 rounded-full bg-purple-500/10 border-2 border-purple-400/40 flex items-center justify-center text-purple-400 mx-auto mb-4 text-2xl group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                        </div>
+                        <h3 class="font-orbitron font-bold text-slate-100 text-base">Miler Alarcón</h3>
+                        <p class="text-xs text-purple-400 font-semibold mb-2">Web Interface Developer</p>
+                        <p class="text-[11px] text-slate-400">Diseñador de la interfaz web táctil adaptativa, joystick virtual y arquitectura visual del dashboard.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="glass-panel border-t border-cyan-500/20 px-4 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400">
+            <div>HYPERION AUTO-NAV v3.0 &copy; 2026 — Robot Esquiva-Obstáculos ESP32.</div>
+            <div class="font-mono text-[11px] text-cyan-400">Gleimer Arias | Jonny Carrisoza | Edwin Montiel | Miler Alarcón</div>
+        </div>
+    </footer>
+
+    <!-- THREE.JS ULTRA 3D ENGINE SCRIPT -->
+    <script>
+        let scene, camera, renderer, robotGroup, wheelsGroup = [], waveMeshGroup, underglowLight;
+        let isDragging = false, previousMousePosition = { x: 0, y: 0 };
+
+        function init3D() {
+            const container = document.getElementById('canvas-robot-3d');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(4.2, 3.2, 5.2);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ canvas: container, antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // LIGHTS & NEON AMBIENCE
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const mainLight = new THREE.DirectionalLight(0x00f0ff, 1.4);
+            mainLight.position.set(6, 10, 6);
+            scene.add(mainLight);
+
+            const purpleLight = new THREE.PointLight(0x7000ff, 2, 12);
+            purpleLight.position.set(-4, -2, -3);
+            scene.add(purpleLight);
+
+            // Underglow Neon Light below the chassis
+            underglowLight = new THREE.PointLight(0x00f0ff, 3, 5);
+            underglowLight.position.set(0, -0.4, 0);
+            scene.add(underglowLight);
+
+            // Grid Floor Matrix
+            const gridHelper = new THREE.GridHelper(12, 24, 0x00f0ff, 0x1e293b);
+            gridHelper.position.y = -0.55;
+            scene.add(gridHelper);
+
+            // ROBOT MAIN GROUP
+            robotGroup = new THREE.Group();
+
+            // 1. Double Layer Transparent Acrylic Chassis (Exact cut design)
+            const chassisGeo = new THREE.BoxGeometry(2.5, 0.1, 1.6);
+            const chassisMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                transmission: 0.9,
+                opacity: 1,
+                transparent: true,
+                roughness: 0.05,
+                ior: 1.5,
+                reflectivity: 0.95
+            });
+            const chassisBottom = new THREE.Mesh(chassisGeo, chassisMat);
+            robotGroup.add(chassisBottom);
+
+            const chassisTop = new THREE.Mesh(chassisGeo, chassisMat);
+            chassisTop.position.y = 0.35;
+            robotGroup.add(chassisTop);
+
+            // Metal Standoff Pillars connecting layers
+            [-1, 1].forEach(x => {
+                [-0.6, 0.6].forEach(z => {
+                    const pillarGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.35, 12);
+                    const pillarMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.9 });
+                    const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+                    pillar.position.set(x, 0.175, z);
+                    robotGroup.add(pillar);
+                });
+            });
+
+            // 2. Yellow Wheels (2WD) + Yellow Motors
+            const wheelGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.25, 32);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.2 }); // Bright Yellow
+            const tireMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 }); // Dark Rubber Tire
+
+            [-0.92, 0.92].forEach(zPos => {
+                const wheelHolder = new THREE.Group();
+                const wheelMesh = new THREE.Mesh(wheelGeo, wheelMat);
+                wheelMesh.rotation.x = Math.PI / 2;
+                
+                const tireGeo = new THREE.TorusGeometry(0.55, 0.09, 16, 32);
+                const tireMesh = new THREE.Mesh(tireGeo, tireMat);
+                wheelMesh.add(tireMesh);
+
+                wheelHolder.add(wheelMesh);
+                wheelHolder.position.set(-0.4, -0.15, zPos);
+                wheelsGroup.push(wheelHolder);
+                robotGroup.add(wheelHolder);
+
+                // Yellow DC Gearbox Motor Body
+                const motorGeo = new THREE.BoxGeometry(0.8, 0.3, 0.3);
+                const motorMat = new THREE.MeshStandardMaterial({ color: 0xeab308 });
+                const motor = new THREE.Mesh(motorGeo, motorMat);
+                motor.position.set(-0.4, -0.15, zPos > 0 ? zPos - 0.25 : zPos + 0.25);
+                robotGroup.add(motor);
+            });
+
+            // Swivel Caster Wheel (Back)
+            const casterGeo = new THREE.SphereGeometry(0.22, 16, 16);
+            const casterMat = new THREE.MeshStandardMaterial({ color: 0xe5e7eb, metalness: 0.95 });
+            const caster = new THREE.Mesh(casterGeo, casterMat);
+            caster.position.set(0.9, -0.22, 0);
+            robotGroup.add(caster);
+
+            // 3. Battery Pack with 18650/AA Blue Batteries
+            const battBoxGeo = new THREE.BoxGeometry(0.85, 0.38, 1.15);
+            const battBoxMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+            const battBox = new THREE.Mesh(battBoxGeo, battBoxMat);
+            battBox.position.set(0.4, 0.55, 0);
+            robotGroup.add(battBox);
+
+            [-0.26, 0.26].forEach(z => {
+                const battGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.72, 16);
+                const battMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.6 });
+                const batt = new THREE.Mesh(battGeo, battMat);
+                batt.rotation.z = Math.PI / 2;
+                batt.position.set(0.4, 0.76, z);
+                robotGroup.add(batt);
+            });
+
+            // 4. ESP32 NodeMCU Board + L298N Red Motor Driver Module
+            const l298nGeo = new THREE.BoxGeometry(0.75, 0.12, 0.75);
+            const l298nMat = new THREE.MeshStandardMaterial({ color: 0xd97706 }); // Red PCB
+            const l298n = new THREE.Mesh(l298nGeo, l298nMat);
+            l298n.position.set(-0.35, 0.42, 0);
+            robotGroup.add(l298n);
+
+            // Black Aluminium Heatsink
+            const hsGeo = new THREE.BoxGeometry(0.28, 0.32, 0.28);
+            const hsMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.95 });
+            const hs = new THREE.Mesh(hsGeo, hsMat);
+            hs.position.set(-0.35, 0.62, 0);
+            robotGroup.add(hs);
+
+            // ESP32 Microcontroller
+            const espGeo = new THREE.BoxGeometry(0.6, 0.08, 0.35);
+            const espMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+            const esp = new THREE.Mesh(espGeo, espMat);
+            esp.position.set(0.3, 0.12, -0.4);
+            robotGroup.add(esp);
+
+            // 5. Ultrasonic Sensor HC-SR04 Front
+            const sensorGroup = new THREE.Group();
+            const pcbGeo = new THREE.BoxGeometry(0.08, 0.38, 0.85);
+            const pcbMat = new THREE.MeshStandardMaterial({ color: 0x0284c7 }); // Blue PCB
+            const pcb = new THREE.Mesh(pcbGeo, pcbMat);
+            sensorGroup.add(pcb);
+
+            // Metallic Transducer Cylinders (Eyes)
+            [-0.24, 0.24].forEach(z => {
+                const cylGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.26, 32);
+                const cylMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.95, roughness: 0.05 });
+                const cyl = new THREE.Mesh(cylGeo, cylMat);
+                cyl.rotation.z = Math.PI / 2;
+                cyl.position.set(-0.11, 0, z);
+                sensorGroup.add(cyl);
+            });
+
+            sensorGroup.position.set(-1.3, 0.35, 0);
+            robotGroup.add(sensorGroup);
+
+            // 6. Ultrasonic Holographic Waves
+            waveMeshGroup = new THREE.Group();
+            for (let i = 1; i <= 3; i++) {
+                const ringGeo = new THREE.RingGeometry(i * 0.32, i * 0.32 + 0.04, 32, 1, 0, Math.PI);
+                const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide, transparent: true, opacity: 0.85 - (i * 0.22) });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.y = Math.PI / 2;
+                ring.rotation.x = Math.PI / 2;
+                ring.position.set(-1.35 - (i * 0.32), 0.35, 0);
+                waveMeshGroup.add(ring);
+            }
+            robotGroup.add(waveMeshGroup);
+
+            scene.add(robotGroup);
+
+            // MOUSE & TOUCH EVENT CONTROLS
+            container.addEventListener('mousedown', e => { isDragging = true; previousMousePosition = { x: e.clientX, y: e.clientY }; });
+            container.addEventListener('mousemove', e => {
+                if (!isDragging) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+
+                robotGroup.rotation.y += deltaX * 0.008;
+                robotGroup.rotation.x += deltaY * 0.008;
+
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            window.addEventListener('mouseup', () => { isDragging = false; });
+
+            container.addEventListener('touchstart', e => { if (e.touches.length === 1) { isDragging = true; previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY }; } });
+            container.addEventListener('touchmove', e => {
+                if (!isDragging || e.touches.length !== 1) return;
+                const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                const deltaY = e.touches[0].clientY - previousMousePosition.y;
+
+                robotGroup.rotation.y += deltaX * 0.008;
+                robotGroup.rotation.x += deltaY * 0.008;
+
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            });
+            window.addEventListener('touchend', () => { isDragging = false; });
+
+            window.addEventListener('resize', () => {
+                const w = container.clientWidth;
+                const h = container.clientHeight;
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h);
+            });
+
+            animate3D();
+        }
+
+        function changeNeonColor(hexColor) {
+            if (underglowLight) underglowLight.color.setHex(hexColor);
+            if (waveMeshGroup) {
+                waveMeshGroup.children.forEach(w => w.material.color.setHex(hexColor));
+            }
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+
+            if (!isDragging) {
+                robotGroup.rotation.y += 0.004;
+            }
+
+            if (waveMeshGroup) {
+                waveMeshGroup.children.forEach(wave => {
+                    wave.scale.x += 0.012;
+                    wave.scale.y += 0.012;
+                    wave.material.opacity -= 0.012;
+
+                    if (wave.material.opacity <= 0) {
+                        wave.scale.set(1, 1, 1);
+                        wave.material.opacity = 0.85;
+                    }
+                });
+            }
+
+            // Animated Wheels based on current command
+            if (currentCmd === 'adelante') {
+                wheelsGroup.forEach(w => w.children[0].rotation.z -= 0.12);
+            } else if (currentCmd === 'atras') {
+                wheelsGroup.forEach(w => w.children[0].rotation.z += 0.12);
+            } else if (currentCmd === 'izquierda') {
+                wheelsGroup[0].children[0].rotation.z += 0.12;
+                wheelsGroup[1].children[0].rotation.z -= 0.12;
+            } else if (currentCmd === 'derecha') {
+                wheelsGroup[0].children[0].rotation.z -= 0.12;
+                wheelsGroup[1].children[0].rotation.z += 0.12;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // TAB SWITCHING LOGIC
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/30');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            activeBtn.classList.remove('text-slate-400');
+            activeBtn.classList.add('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/30');
+        }
+
+        // SIMULATED ROBOT STATE
+        let currentDist = 60;
+        let currentCmd = 'parar';
+
+        function highlightArrow(dir) {
+            ['up', 'down', 'left', 'right'].forEach(a => {
+                const el = document.getElementById(`arrow-${a}`);
+                if (el) el.style.color = 'rgba(0, 240, 255, 0.4)';
+            });
+            if (dir && dir !== 'parar') {
+                const map = { 'adelante': 'up', 'atras': 'down', 'izquierda': 'left', 'derecha': 'right' };
+                const activeEl = document.getElementById(`arrow-${map[dir]}`);
+                if (activeEl) {
+                    activeEl.style.color = '#00f0ff';
+                    activeEl.style.textShadow = '0 0 10px #00f0ff';
+                }
+            }
+        }
+
+        function sendSimCmd(cmd) {
+            if (currentDist <= 15 && cmd === 'adelante') {
+                currentCmd = 'parar';
+                document.getElementById('cmd-display').innerText = `BLOQUEADO (< 15cm)`;
+                document.getElementById('cmd-display').className = "text-xs font-mono text-red-500 animate-pulse font-bold";
+                highlightArrow('parar');
+            } else {
+                currentCmd = cmd;
+                document.getElementById('cmd-display').innerText = `COMANDO: ${cmd.toUpperCase()}`;
+                document.getElementById('cmd-display').className = "text-xs font-mono text-cyan-400 font-bold";
+                highlightArrow(cmd);
+            }
+            updateMotorVisuals();
+        }
+
+        function updateSimDistance(val) {
+            currentDist = parseInt(val);
+            document.getElementById('dist-slider-text').innerText = `${currentDist} cm`;
+            document.getElementById('dist-gauge-text').innerText = `${currentDist} cm`;
+            
+            const gaugeBar = document.getElementById('dist-gauge-bar');
+            const pct = Math.min(Math.max((currentDist / 150) * 100, 5), 100);
+            gaugeBar.style.width = `${pct}%`;
+
+            if (currentDist <= 15) {
+                gaugeBar.className = "h-full bg-red-500 transition-all duration-300";
+                document.getElementById('dist-gauge-text').className = "font-orbitron text-sm font-bold text-red-500 animate-pulse";
+                if (currentCmd === 'adelante') {
+                    sendSimCmd('parar');
+                }
+            } else if (currentDist <= 40) {
+                gaugeBar.className = "h-full bg-amber-500 transition-all duration-300";
+                document.getElementById('dist-gauge-text').className = "font-orbitron text-sm font-bold text-amber-400";
+            } else {
+                gaugeBar.className = "h-full bg-emerald-500 transition-all duration-300";
+                document.getElementById('dist-gauge-text').className = "font-orbitron text-sm font-bold text-emerald-400";
+            }
+        }
+
+        function updateMotorVisuals() {
+            const mLeft = document.getElementById('motor-left-status');
+            const mRight = document.getElementById('motor-right-status');
+            const consoleLog = document.getElementById('console-cmd-log');
+
+            if (currentCmd === 'adelante') {
+                mLeft.innerText = "AVANCE (FWD)"; mLeft.className = "font-orbitron text-sm font-bold text-emerald-400";
+                mRight.innerText = "AVANCE (FWD)"; mRight.className = "font-orbitron text-sm font-bold text-emerald-400";
+                consoleLog.innerText = `> [HTTP GET /adelante]: Motores en marcha adelante.`;
+            } else if (currentCmd === 'atras') {
+                mLeft.innerText = "REVERSA (REV)"; mLeft.className = "font-orbitron text-sm font-bold text-amber-400";
+                mRight.innerText = "REVERSA (REV)"; mRight.className = "font-orbitron text-sm font-bold text-amber-400";
+                consoleLog.innerText = `> [HTTP GET /atras]: Motores en marcha atrás.`;
+            } else if (currentCmd === 'izquierda') {
+                mLeft.innerText = "REVERSA (REV)"; mLeft.className = "font-orbitron text-sm font-bold text-amber-400";
+                mRight.innerText = "AVANCE (FWD)"; mRight.className = "font-orbitron text-sm font-bold text-emerald-400";
+                consoleLog.innerText = `> [HTTP GET /izquierda]: Giro sobre eje izquierdo.`;
+            } else if (currentCmd === 'derecha') {
+                mLeft.innerText = "AVANCE (FWD)"; mLeft.className = "font-orbitron text-sm font-bold text-emerald-400";
+                mRight.innerText = "REVERSA (REV)"; mRight.className = "font-orbitron text-sm font-bold text-amber-400";
+                consoleLog.innerText = `> [HTTP GET /derecha]: Giro sobre eje derecho.`;
+            } else {
+                mLeft.innerText = "DETENIDO"; mLeft.className = "font-orbitron text-sm font-bold text-slate-400";
+                mRight.innerText = "DETENIDO"; mRight.className = "font-orbitron text-sm font-bold text-slate-400";
+                consoleLog.innerText = `> [HTTP GET /parar]: Motores bloqueados (STOP).`;
+            }
+        }
+
+        // JOYSTICK TOUCH ENGINE
+        const base = document.getElementById('stick-base');
+        const knob = document.getElementById('stick-knob');
+        let active = false;
+        const RADIO = 65;
+        const ZONA_MUERTA = 18;
+
+        function moveKnob(clientX, clientY) {
+            const rect = base.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            let dx = clientX - cx;
+            let dy = clientY - cy;
+            const dist = Math.min(Math.sqrt(dx*dx + dy*dy), RADIO);
+            const ang = Math.atan2(dy, dx);
+            const kx = Math.cos(ang) * dist;
+            const ky = Math.sin(ang) * dist;
+
+            knob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+
+            if (dist < ZONA_MUERTA) {
+                sendSimCmd('parar');
+                return;
+            }
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                sendSimCmd(dx > 0 ? 'derecha' : 'izquierda');
+            } else {
+                sendSimCmd(dy > 0 ? 'atras' : 'adelante');
+            }
+        }
+
+        function releaseKnob() {
+            active = false;
+            knob.classList.remove('active');
+            knob.style.transform = 'translate(-50%, -50%)';
+            sendSimCmd('parar');
+        }
+
+        base.addEventListener('pointerdown', e => {
+            active = true;
+            knob.classList.add('active');
+            base.setPointerCapture(e.pointerId);
+            moveKnob(e.clientX, e.clientY);
+        });
+
+        base.addEventListener('pointermove', e => {
+            if (active) moveKnob(e.clientX, e.clientY);
+        });
+
+        base.addEventListener('pointerup', releaseKnob);
+        base.addEventListener('pointercancel', releaseKnob);
+
+        function copySourceCode() {
+            const codeText = document.getElementById('cpp-code-block').innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = codeText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const copyBtn = document.getElementById('copy-btn');
+            copyBtn.innerHTML = `<i class="fa-solid fa-check text-sm"></i> <span>¡Copiado!</span>`;
+            copyBtn.classList.replace('bg-cyan-500', 'bg-emerald-500');
+
+            setTimeout(() => {
+                copyBtn.innerHTML = `<i class="fa-regular fa-copy text-sm"></i> <span>Copiar Código</span>`;
+                copyBtn.classList.replace('bg-emerald-500', 'bg-cyan-500');
+            }, 2000);
+        }
+
+        window.onload = function() {
+            init3D();
+            updateSimDistance(60);
+        };
+    </script>
+</body>
+</html>
